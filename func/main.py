@@ -10,6 +10,10 @@ from .pathoptimizer import *
 FILE_PATH = "D:/Eze/Programacion/Router/SimpleServer/sandbox/src/planet_-62.291_-38.723_c4ce7a27.osm"
 G = ox.core.graph_from_file(FILE_PATH, bidirectional=False, simplify=True, retain_all=False, name='unnamed')
 
+# Receives either addresses or coordinates
+# and returns the best route (in coordinates) connecting all those points
+# the coordinates, the coordinates in order and the routes length
+# NOTE: WILL return similar coordinates to the originals
 def getRoute(starting_point, points):
 	# Check if points are addresses, if so, we need to geocode
 	full_coordinates = []
@@ -22,9 +26,9 @@ def getRoute(starting_point, points):
 		full_coordinates = points.copy()
 		full_coordinates.insert(0, starting_point)
 
-	distances, routes = retrieveDistanceMatrix(G, full_coordinates)
+	distances, routes, node_coordinates_map = retrieveDistanceMatrix(G, full_coordinates)
 
-	# Again, starting point is on index 0
+	# Again, starting point is at index 0
 	best_route_indexes = optimumPath(0, distances)
 
 	best_route = []
@@ -34,4 +38,13 @@ def getRoute(starting_point, points):
 			best_route_length += distances[x][best_route_indexes[i+1]]
 			best_route.extend(routes[x][best_route_indexes[i + 1]])
 
-	return best_route, best_route_length
+	# Node to coordinates transformation
+	output_route = []
+	output_coordinates = []
+
+	for x in best_route:
+		if x in node_coordinates_map.keys():
+			output_coordinates.append(node_coordinates_map[x])
+		output_route.append((G.nodes[x]['x'], G.nodes[x]['y']))
+
+	return output_route, output_coordinates, best_route_length

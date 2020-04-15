@@ -23,9 +23,9 @@ if r.ok:
 	best_route = r.json()
 	FILE_PATH = "D:/Eze/Programacion/Router/SimpleServer/sandbox/src/planet_-62.291_-38.723_c4ce7a27.osm"
 	G = ox.core.graph_from_file(FILE_PATH, bidirectional=False, simplify=True, retain_all=False, name='unnamed')
-
+	print(r.json())
 	# Plotting
-	fig, ax = ox.plot_graph_route(G, best_route)
+	#fig, ax = ox.plot_graph_route(G, best_route)
 	#fig, ax = ox.plot_graph_route(G, best_route, show=False, close=False)
 	#for x in points:
 	#	ax.scatter(x[1], x[0], c = 'red')

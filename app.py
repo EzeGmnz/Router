@@ -9,14 +9,12 @@ def routing():
 	starting_point = content['start']
 	points = content['points']
 
-	route, length = Main.getRoute(starting_point, points)
+	route, coords, length = Main.getRoute(starting_point, points)
 
 	# Need to format output as int to send json
-	# otherwise raises a warning related to numpy's int64 ???
-	aux = []
-	for x in route:
-		aux.append(int(x))
-	return jsonify(aux)
+	# otherwise raises a warning related to numpy's int64 ??
+
+	return jsonify([route, coords, length])
 
 # Run locally
 if __name__ == '__main__':

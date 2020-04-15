@@ -97,16 +97,21 @@ def geocode(addresses):
 
 # G: osmnx multidigrpah
 # points: coordinates to visit
+# note that this alogrithm results in a windy matrix, that is, a 
+# non-symetrical one.
 def retrieveDistanceMatrix(G, points):
 	routes = [[[] for i in range(len(points))] for j in range(len(points))]
 	distances = [[0 for i in range(len(points))] for j in range(len(points))]
-	
+	node_coordinate_map = {}
 	for i in range(len(points)):
 		for j in range(len(points)):
 			if i != j:
 				origin = ox.get_nearest_node(G, points[i])
 				end = ox.get_nearest_node(G, points[j])
 				
+				node_coordinate_map[origin] = points[i]
+				node_coordinate_map[end] = points[j]
+
 				route = nx.shortest_path(G, origin, end, weight='length')
 				distance = nx.shortest_path_length(G, origin, end, weight='length')
 				routes[i][j] = route
@@ -115,4 +120,4 @@ def retrieveDistanceMatrix(G, points):
 				routes[i][j] = []
 				distances[i][j] = float("inf")
 
-	return distances, routes
+	return distances, routes, node_coordinate_map

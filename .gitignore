@@ -5,7 +5,9 @@ __pycache__/
 
 # C extensions
 *.so
-
+tilescache/
+notes.txt
+src/
 # Distribution / packaging
 .Python
 build/
