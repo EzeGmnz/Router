@@ -1,4 +1,4 @@
-''' Main nexus of modules'''
+'''  '''
 
 import numpy as np
 import osmnx as ox
@@ -13,7 +13,7 @@ G = ox.core.graph_from_file(FILE_PATH, bidirectional=False, simplify=True, retai
 # Receives either addresses or coordinates
 # and returns the best route (in coordinates) connecting all those points
 # the coordinates, the coordinates in order and the routes length
-# NOTE: WILL return similar coordinates to the originals
+
 def getRoute(starting_point, points):
 	# Check if points are addresses, if so, we need to geocode
 	full_coordinates = []
@@ -43,7 +43,7 @@ def getRoute(starting_point, points):
 	output_coordinates = []
 
 	for x in best_route:
-		if x in node_coordinates_map.keys():
+		if x in node_coordinates_map.keys() and node_coordinates_map[x] not in output_coordinates:
 			output_coordinates.append(node_coordinates_map[x])
 		output_route.append((G.nodes[x]['x'], G.nodes[x]['y']))
 
