@@ -20,7 +20,13 @@ def _aproximate(v1, v2, z):
 
 	return lat, lon
 
+''' Returning the section to where the given address belongs
+If  no section is found, None is returned otherwise'''
+def _whichState(address, database):
+	pass
+
 ''' offline geocoder'''
+# TODO need to determine section, and acces the corresponding .osm
 # TODO determine a convention for address naming including town, state...
 def geocode(addresses):
 	xml = minidom.parse(FILE_PATH)

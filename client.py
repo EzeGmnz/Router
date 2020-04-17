@@ -21,3 +21,4 @@ r = requests.post(URL + '/routing', json=JSON)
 if r.ok:
 	best_route = r.json()
 	print(r.json())
+	
