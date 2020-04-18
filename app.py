@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request
-import func.main as Main
+from func.router import *
 
 app = Flask(__name__)
 
@@ -8,9 +8,11 @@ def routing():
 	content = request.json
 	starting_point = content['start']
 	points = content['points']
-	routeR, coords, lengthR = Main.getRoute(starting_point, points)
+	router = Router()
 
-	return jsonify(route= routeR, coordinates = coords, length = lengthR)
+	routeR, coords, lengthR = router.getRouteFromAddresses(starting_point, points)
+
+	return jsonify(route = routeR, coordinates = coords, length = lengthR)
 
 # Run locally
 if __name__ == '__main__':

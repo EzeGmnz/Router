@@ -1,7 +1,7 @@
 from xml.dom import minidom
 
-''' administrative class for the osm files serving as database'''
-class database:
+''' Osm files accesing is done from here'''
+class Database:
 
 	''' files: file name list'''
 	def __init__(self, files = None):
@@ -10,54 +10,61 @@ class database:
 		else:
 			self._file_list = files
 		pass
+		self._description_osm_map = {}
+
+		for x in _file_list:
+			self._description_osm_map[x] = _getFileDescription(minidom.parse(x))
 
 	''' add a file to existing ones
 	file: the file to add '''
 	def addFile(self, file):
 		self._file_list.append(file)
+		if file not in self._description_osm_map:
+			self._description_osm_map[file] = _getFileDescription(minidom.parse(file))
 		pass
 
-	# Returns the osm description
-	# file minidom xml file
-	def _getFileDescription(xml):
+	# Returns the osm description as a map
+	# the description includes: bounds(minlat, minlon, maxlat, maxlon), state/country/city name(name),
+	# and 
+	# file: minidom xml file
+	def _getFileDescription(self, xml):
 		output_map = {}
 		
 		# retrieving bounds
 		bounds = xml.getElementsByTagName('bounds')
-		output_map['minlat'] = bounds.getAttribute('minlat')
-		output_map['minlon'] = bounds.getAttribute('minlon')
-		output_map['maxlat'] = bounds.getAttribute('maxlat')
-		output_map['maxlon'] = bounds.getAttribute('maxlon')
+		if len(bounds) == 1:
+			output_map['minlat'] = float(bounds[0].getAttribute('minlat'))
+			output_map['minlon'] = float(bounds[0].getAttribute('minlon'))
+			output_map['maxlat'] = float(bounds[0].getAttribute('maxlat'))
+			output_map['maxlon'] = float(bounds[0].getAttribute('maxlon'))
 
 		# retrieving name
 		nodes = xml.getElementsByTagName('node')
-		for n in nodes:
-			tags = nodes.getElementsByTagName('tag')
-			name = None
-			place = None
-			i = 0
-			while i < len(tags) and name is None and place is None:
-				t = tags[i]
-				if t.getAttribute('k') == 'name'
-					name = t.getAttribute('v')
-				elif t.getAttribute('v') == 'place'
-					place = t.getAttribute('v')
-				i += 1
-		 	if final_node is not None:
-		 		output_map['name'] = name
-		 		break
+		tags = nodes[0].getElementsByTagName('tag')
+
+		i = 0
+		while i < len(tags) and 'name' not in output_map or 'place' not in output_map:
+			t = tags[i]
+			if t.getAttribute('k') == 'name':
+				output_map['name'] = t.getAttribute('v')
+			elif t.getAttribute('k') == 'place':
+				output_map['place'] = t.getAttribute('v')
+			i += 1
+
 		return output_map
 
-	''' Return the osm file corresponding to the coordinate, if exists, otherwise return None'''
-	def getSection(self, coordinate):
-		section = None
+	# TODO improve on how the states/cities are typen
+	''' Return the first osm file holding the address, if exists, otherwise return None'''
+	def getSectionFromAddress(self, address):
+		for k, v in self._description_osm_map.items():
+			if v['name'] in address:
+				return k
+
+	''' Return the first osm file holding the coordinate, if exists, otherwise return None'''
+	def getSectionFromCoordinate(self, coordinate):
 		lat, lon = coordinate
-		for x in _file_list:
-			xml = minidom.parse(x)
-			
-			# Checking if coordinate lands in the osm file bounds
-			current_file_desc = -_getFileDescription(xml)
-			if lat >= output_map['minlat'] and lat <= output_map['maxlat'] and
-				lon >= output_map['minlon'] and lon <= output_map['maxlon']:
-				return x
+		for k, v in self._description_osm_map.items():
+			if (lat >= v['minlat'] and lat <= v['maxlat'] and
+				lon >= v['minlon'] and lon <= v['maxlon']):
+				return k
 		return None

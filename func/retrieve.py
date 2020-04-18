@@ -1,129 +1,112 @@
 '''
 Access and transformation of data
-All network related functionality
+All street network related functionality
 All geocoding related functionality
 '''
 import osmnx as ox
 import networkx as nx
 from xml.dom import minidom
 
-FILE_PATH = "D:/Eze/Programacion/Router/SimpleServer/sandbox/src/planet_-62.291_-38.723_c4ce7a27.osm"
+class Retriever:
 
-# v1 & v2 are the proximate points to X
-# z is the st number to aproximate its lat lon
-def _aproximate(v1, v2, z):
-	x1,y1,z1 = v1
-	x2,y2,z2 = v2
+	def __init__(database):
+		self._database = database
 
-	lat = ((z - z1)/(z2-z1))*(x2-x1)+x1
-	lon = ((z - z1)/(z2-z1))*(y2-y1)+y1
+	# v1 & v2 are the proximate coordinates to X
+	# z is the st number to aproximate its lat lon
+	def _aproximate(v1, v2, z):
+		x1,y1,z1 = v1
+		x2,y2,z2 = v2
 
-	return lat, lon
+		lat = ((z - z1)/(z2-z1))*(x2-x1)+x1
+		lon = ((z - z1)/(z2-z1))*(y2-y1)+y1
 
-''' Returning the section to where the given address belongs
-If  no section is found, None is returned otherwise'''
-def _whichState(address, database):
-	pass
+		return lat, lon
 
-''' offline geocoder'''
-# TODO need to determine section, and acces the corresponding .osm
-# TODO determine a convention for address naming including town, state...
-def geocode(addresses):
-	xml = minidom.parse(FILE_PATH)
-	itemlist = xml.getElementsByTagName('node')
+	def _getNameAndNumberFromNode(node):
+		tags = node.getElementsByTagName('tag')
 
-	# list of tuples [street, number, town, country]
-	# [[Paraguay, 555, BahiaBlanca, Argentina], [Zapiola, 200, BahiaBlanca, Argentina]]
-	addresses_list = []
+		street, number = None, None
+		i = 0
+		while i < len(tags) and (street is None or number is None):
+			if 'addr:street' == tags[i].getAttribute('k'):
+				street = tags[i].getAttribute('v')
+			elif 'addr:housenumber' == tags[i].getAttribute('k'):
+				number = int(float(tags[i].getAttribute('v')))
 
-	for x in addresses:
-		y = x.replace(',',' ')
-		addresses_list.append(y.split(' '))
+		return street, number
 
-	# key = street name, value = dictionary (key: number, value: lat long)
-	# {Paraguay : {	500 : (lat, lon),
-	#				600 : (lat, lon)}}
-	streets_looking_for = {x[0]:{} for x in addresses_list}
+	''' Geocoder; turns a physical address into coordinates'''
+	# TODO May want to optimize if two or more addresses look into the same osm file
+	def geocode(address):
+		xml = minidom.parse(self._database.getSectionFromAddress(address))
+		nodes = xml.getElementsByTagName('node')
 
-	for i, item in enumerate(itemlist):
-		childs = item.getElementsByTagName('tag')
-		# if its a street then it must have two child nodes
-		# one for street name and another for its number
-		street = None
-		number = None
+		# Conventionally, street name will be at index 0 and number at 1
+		address_as_list = address.replace(',',' ').split(' ')
 
-		for z in childs:
-			if 'street' in z.getAttribute('k'):
-				street = z.getAttribute('v')
-			elif 'number' in z.getAttribute('k'):
-				number = z.getAttribute('v')
-
-			if number is not None and street is not None:
-				for z in addresses_list:
-					# check if the node corresponds to a street we are looking for
-					# z[0] contains the street name
-					# TODO check if doesnt find
-
-					# TODO improve comparison method, to allow e.g "avenida" etc
-					if z[0] in street:
-						streets_looking_for[z[0]][int(float(number.split(' ')[0]))] = (float(item.getAttribute('lat')), float(item.getAttribute('lon')))
-				break
-
-	output = []
-	for x in addresses_list:
-		current_dict = streets_looking_for[x[0]]
-		# find Y (smaller) & Z (larger)
+		# finding nodes with coordinates in the proximity of the address
 		Y, Z = None, None
-		X = int(x[1])
-		Y_dist= float("inf")
+		X = address_as_list[1]
+
+		Y_dist = float("inf")
 		Z_dist = -float("inf")
-		exact = False
-		for j in current_dict.keys():
-			result = X - j
-			if result == 0:
-				# found the exact coordinates
-				output.append(current_dict[j])
-				exact = True
-				break
-			if result >= 0 and result < Y_dist:
-				Y = j
-				Y_dist = result
-			if result <= 0 and result > Z_dist:
-				Z = j
-				Z_dist = result
 
-		if not exact:
-			latY, lonY = current_dict[Y]
-			latZ, lonZ = current_dict[Z]
+		for node in nodes:
+			street, number = getNameAndNumberFromNode(node)
 
-			output.append(_aproximate((latY, lonY, Y), (latZ, lonZ, Z), X))
+			# TODO improve comparison method
+			if address_as_list[0] in street:
+				# node belongs to the same street
+				result = X - number
+				if result == 0:
+					# found the exact coordinate
+					return (node.getAttribute(lat), node.getAttribute(lon))
 
-	return output
-	# TODO use Y Z accordingly
+				if result > 0 and result < Y_dist:
+					Y = node
+					Y_dist = result
+				if result < 0 and result > Z_dist:
+					Z = node
+					Z_dist = result
 
-# G: osmnx multidigrpah
-# points: coordinates to visit
-# note that this alogrithm results in a windy matrix, that is, a 
-# non-symetrical one.
-def retrieveDistanceMatrix(G, points):
-	routes = [[[] for i in range(len(points))] for j in range(len(points))]
-	distances = [[0 for i in range(len(points))] for j in range(len(points))]
-	node_coordinate_map = {}
-	for i in range(len(points)):
-		for j in range(len(points)):
-			if i != j:
-				origin = ox.get_nearest_node(G, points[i])
-				end = ox.get_nearest_node(G, points[j])
-				
-				node_coordinate_map[origin] = points[i]
-				node_coordinate_map[end] = points[j]
+		latY, lonY = Y.getAttribute(lat), Y.getAttribute(lon)
+		latZ, lonZ = Z.getAttribute(lat), Z.getAttribute(lon)
 
-				route = nx.shortest_path(G, origin, end, weight='length')
-				distance = nx.shortest_path_length(G, origin, end, weight='length')
-				routes[i][j] = route
-				distances[i][j] = distance
-			else:
-				routes[i][j] = []
-				distances[i][j] = float("inf")
+		return _aproximate((latY, lonY, Y), (latZ, lonZ, Z), X)
 
-	return distances, routes, node_coordinate_map
+	# G: osmnx multidigrpah
+	# points: coordinates to visit
+	# note that this alogrithm results in a windy matrix, that is,
+	# non-symetrical, since the route from X to Y may not be the same route from Y to X
+	def distanceMatrix(coordinates):
+		# !!! TODO see how to join the osm files to where the coordinates belong
+		# below code is an implementation assuming all belong to the same file
+
+		FILE_PATH = self._database.getSectionFromCoordinate(coordinates[0])
+		G = ox.core.graph_from_file(FILE_PATH, bidirectional=False, simplify=True, retain_all=False, name='unnamed')
+
+		routes = [[[] for i in range(len(coordinates))] for j in range(len(coordinates))]
+		distances = [[0 for i in range(len(coordinates))] for j in range(len(coordinates))]
+		for i in range(len(coordinates)):
+			for j in range(len(coordinates)):
+				if i != j:
+					origin = ox.get_nearest_node(G, coordinates[i])
+					end = ox.get_nearest_node(G, coordinates[j])
+
+
+					node_route = nx.shortest_path(G, origin, end, weight='length')
+					distance = nx.shortest_path_length(G, origin, end, weight='length')
+
+					# node to coordinates translation
+					route = []
+					for node in node_route:
+						route.append((G.nodes[node]['x'], G.nodes[node]['y']))
+					
+					routes[i][j] = route
+					distances[i][j] = distance
+				else:
+					routes[i][j] = []
+					distances[i][j] = float("inf")
+
+		return distances, routes
