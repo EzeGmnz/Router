@@ -1,112 +1,152 @@
+#!/usr/bin/env python
 '''
 Access and transformation of data
 All street network related functionality
 All geocoding related functionality
 '''
+
 import osmnx as ox
+from .utils import *
 import networkx as nx
 from xml.dom import minidom
+from networkx.readwrite import json_graph
+import json
+import time
+
+__author__ = "Ezequiel Giménez"
+__copyright__ = "Copyright 2020, Router project"
+__credits__ = ["Ezequiel Giménez"]
+__maintainer__ = "Ezequiel Giménez"
+__email__ = "eze.gimenez.98@gmail.com"
+__status__ = "Development"
 
 class Retriever:
 
-	def __init__(database):
+	def __init__(self, database):
 		self._database = database
 
 	# v1 & v2 are the proximate coordinates to X
 	# z is the st number to aproximate its lat lon
-	def _aproximate(v1, v2, z):
-		x1,y1,z1 = v1
-		x2,y2,z2 = v2
+	def _aproximate(self, v1, v2, X):
+		(latY,lonY),Y = v1
+		(latZ,lonZ),Z = v2
 
-		lat = ((z - z1)/(z2-z1))*(x2-x1)+x1
-		lon = ((z - z1)/(z2-z1))*(y2-y1)+y1
+		lat = ((X - Y)/(Z-Y))*(latZ-latY)+latY
+		lon = ((X - Y)/(Z-Y))*(lonZ-lonY)+lonY
 
 		return lat, lon
 
-	def _getNameAndNumberFromNode(node):
-		tags = node.getElementsByTagName('tag')
-
-		street, number = None, None
-		i = 0
-		while i < len(tags) and (street is None or number is None):
-			if 'addr:street' == tags[i].getAttribute('k'):
-				street = tags[i].getAttribute('v')
-			elif 'addr:housenumber' == tags[i].getAttribute('k'):
-				number = int(float(tags[i].getAttribute('v')))
-
-		return street, number
-
 	''' Geocoder; turns a physical address into coordinates'''
-	# TODO May want to optimize if two or more addresses look into the same osm file
-	def geocode(address):
-		xml = minidom.parse(self._database.getSectionFromAddress(address))
-		nodes = xml.getElementsByTagName('node')
+	def geocode(self, address):
 
 		# Conventionally, street name will be at index 0 and number at 1
 		address_as_list = address.replace(',',' ').split(' ')
 
 		# finding nodes with coordinates in the proximity of the address
 		Y, Z = None, None
-		X = address_as_list[1]
+		nodeY, nodeZ = None,None
+		X = int(address_as_list[1])
 
 		Y_dist = float("inf")
 		Z_dist = -float("inf")
 
-		for node in nodes:
-			street, number = getNameAndNumberFromNode(node)
+		parsed_osm = self._database.get(self._database.getSectionFromAddress(address))
 
-			# TODO improve comparison method
-			if address_as_list[0] in street:
-				# node belongs to the same street
+		# mapping inputed street name to osm file one
+		real_street_name = None
+		for s in parsed_osm.keys():
+			if nameComparison(formatAddress(s), formatAddress(address_as_list[0]), 1):
+				real_street_name = s
+
+		# if street name exists in database
+		if real_street_name is not None:
+			# for each number belonging to the street
+			for number, (lat, lon) in parsed_osm[real_street_name].items():
 				result = X - number
 				if result == 0:
 					# found the exact coordinate
-					return (node.getAttribute(lat), node.getAttribute(lon))
+					return (lat, lon)
 
 				if result > 0 and result < Y_dist:
-					Y = node
+					nodeY = (lat, lon)
+					Y = int(number)
 					Y_dist = result
 				if result < 0 and result > Z_dist:
-					Z = node
+					nodeZ = (lat, lon)
+					Z = int(number)
 					Z_dist = result
+		else:
+			# TODO see what to do if street name was not found
+			print("NOT FOUND", address_as_list)
 
-		latY, lonY = Y.getAttribute(lat), Y.getAttribute(lon)
-		latZ, lonZ = Z.getAttribute(lat), Z.getAttribute(lon)
+		return self._aproximate((nodeY, Y), (nodeZ, Z), X)
 
-		return _aproximate((latY, lonY, Y), (latZ, lonZ, Z), X)
+	# Returns multidigaph 'G'
+	def _openGraph(self, filename):
+		G = None
+		try:
+			with open(filename + 'graph', 'r') as file:
+				G = json_graph.node_link_graph(json.load(file)) 
+		except IOError:
+			# writing graph's json
+			G = ox.core.graph_from_file(filename, bidirectional=False, simplify=True, retain_all=False, name='unnamed')
+			file = open(filename + 'graph', 'w+')
+			print("aAAAAAAAAA", json_graph.node_link_data(G))
+			file.write(json.dumps(json_graph.node_link_data(G)))
+			file.close()
+		return G
 
 	# G: osmnx multidigrpah
 	# points: coordinates to visit
 	# note that this alogrithm results in a windy matrix, that is,
 	# non-symetrical, since the route from X to Y may not be the same route from Y to X
-	def distanceMatrix(coordinates):
+	def distanceMatrix(self, coordinates):
 		# !!! TODO see how to join the osm files to where the coordinates belong
-		# below code is an implementation assuming all belong to the same file
+		# below code assumes all coords belong to the same file as the starting point
+
+		###TODO
+		start = time.perf_counter()
+		print("START\tdistancematrix ", time.perf_counter())
+		###
 
 		FILE_PATH = self._database.getSectionFromCoordinate(coordinates[0])
-		G = ox.core.graph_from_file(FILE_PATH, bidirectional=False, simplify=True, retain_all=False, name='unnamed')
-
+		G = self._openGraph(FILE_PATH)
+		#G = ox.core.graph_from_file(FILE_PATH, bidirectional=False, simplify=True, retain_all=False, name='unnamed')
+		
 		routes = [[[] for i in range(len(coordinates))] for j in range(len(coordinates))]
-		distances = [[0 for i in range(len(coordinates))] for j in range(len(coordinates))]
+		distances = [[0 for i in range(len(coordinates))] for j in range(len(coordinates))]		
+		
 		for i in range(len(coordinates)):
 			for j in range(len(coordinates)):
 				if i != j:
 					origin = ox.get_nearest_node(G, coordinates[i])
 					end = ox.get_nearest_node(G, coordinates[j])
 
+					
 
 					node_route = nx.shortest_path(G, origin, end, weight='length')
 					distance = nx.shortest_path_length(G, origin, end, weight='length')
-
+					
+					
 					# node to coordinates translation
 					route = []
-					for node in node_route:
-						route.append((G.nodes[node]['x'], G.nodes[node]['y']))
-					
+
+					for node in node_route[1:len(node_route)-1]:
+						# dont add first and last (will be added later to match input coords)
+						route.append((G.nodes[node]['y'], G.nodes[node]['x']))
+					# adding starting and end coords
+					route = [coordinates[i]] + route + [coordinates[j]]
+
 					routes[i][j] = route
 					distances[i][j] = distance
 				else:
 					routes[i][j] = []
 					distances[i][j] = float("inf")
+		
+
+		###
+		end = time.perf_counter()
+		print("END\tdistancematrix", time.perf_counter(), " - " , end-start)
+		###
 
 		return distances, routes

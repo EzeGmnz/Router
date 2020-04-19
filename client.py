@@ -3,9 +3,9 @@ from flask import jsonify
 
 URL = 'http://127.0.0.1:5000'
 
-JSON = {
-	'start': 'Paraguay 555, Bahia Blanca, Argentina',
-	'points' : ['Zapiola 200, Bahia Blanca, Argentina',
+JSON = {'points' : [
+	'Paraguay 555, Bahia Blanca, Argentina',
+	'Zapiola 200, Bahia Blanca, Argentina',
 	'Uruguay 300, Bahia Blanca, Argentina',
 	'Zapiola 700, Bahia Blanca, Argentina',
 	'Alem 800, Bahia Blanca, Argentina',
