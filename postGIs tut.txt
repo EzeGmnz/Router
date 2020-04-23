@@ -1,4 +1,7 @@
 ####### POSTGRES #############
+START POSTGRES:
+pg_ctl -D dir/to/data start
+
 create user:
 create role username login password password noinherit createdb
 \c databasename
@@ -62,5 +65,38 @@ $$
 	SELECT the_geom
 	FROM pgr_dijkstra('SELECT gid AS id, source, target, cost, reverse_cost FROM ways', source, target, true) AS r 
 	LEFT JOIN ways AS w ON r.edge = w.gid; 
+$$
+LANGUAGE SQL;
+
+/*
+	input: $1 as lat, $2 as lon
+*/
+CREATE OR REPLACE FUNCTION routeBetweenShell(FLOAT[], FLOAT[]) RETURNS TABLE(g geometry) AS
+$$
+	WITH 
+	coords AS (
+		SELECT *
+		FROM unnest($1, $2)
+	), 
+	routeseq AS (
+		SELECT * FROM pgr_TSP(
+			'
+				SELECT * 
+				FROM pgr_dijkstraCostMatrix("SELECT gid AS id, source, target, cost, reverse_cost FROM ways",
+											(SELECT array_agg(nearestGeo(ST_SetSRID(ST_MakePoint(lon, lat), 4326))) FROM coords),
+											directed := false)
+			',
+		/*TODO set starting and ending point for the route
+		end_id may be the furthest point from start*/
+		start_id := 339,
+		/*end_id := ,*/
+		randomize := false)
+	),
+	tuples AS (
+			SELECT r1.node AS source, r2.node AS target
+			FROM routeseq AS r1
+			JOIN routeseq AS r2 on r2.seq = r1.seq + 1
+			WHERE r2.seq < (SELECT MAX(seq) FROM routeseq))
+	select routebetween(source, target) from tuples
 $$
 LANGUAGE SQL;

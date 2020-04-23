@@ -1,4 +1,0 @@
-Avenida
-calle
-highway
-avenue
