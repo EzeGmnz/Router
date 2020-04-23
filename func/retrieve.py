@@ -62,6 +62,7 @@ class Retriever:
 		if real_street_name is not None:
 			# for each number belonging to the street
 			for number, (lat, lon) in parsed_osm[real_street_name].items():
+				print(parsed_osm[real_street_name])
 				result = X - number
 				if result == 0:
 					# found the exact coordinate

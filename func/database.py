@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 """
 Osm file managment and administration
+Transform osm to a json map for an optimum performance
 """
 from xml.dom import minidom
 from .utils import nameComparison
+import json
+import os
 import time
 
 __author__ = "Ezequiel Giménez"
@@ -15,6 +18,8 @@ __status__ = "Development"
 
 ''' Osm files accesing is done from here'''
 class Database:
+
+	DATABASE_FILE_PATH = "/database/"
 
 	class Vividict(dict):
 		def __getitem__(self, item):
@@ -35,16 +40,40 @@ class Database:
 		self._osm_description = {}
 
 		for file in self._file_list:
-			self._osm_description[file] = self._getFileDescription(minidom.parse(file))
-			self._parsed_files[file] = self.getFileParsed(file)
+			self._update(file)
+
+	def _update(self, file):
+		route = os.getcwd() + self.DATABASE_FILE_PATH + file.split('/')[-1][:-4]
+		# file network dictionary
+		try:
+			with open(route + '_map.json', 'r') as data:
+				self._parsed_files[file] = json.load(data)
+		except:
+			# didnt find file dictionary
+			data = open(route + '_map.json', 'w+')
+			dic = self._getFileParsed(file)
+			self._parsed_files[file] = dic
+			data.write(json.dumps(dic))
+			data.close()
+
+		# file description dictionary
+		try:
+			with open(route + '_description_map.json', 'r') as data:
+				self._osm_description[file] = json.load(data)
+		except:
+			# didnt find file dictionary
+			data = open(route + '_description_map.json', 'w+')
+			dic = self._getFileDescription(file)
+			self._osm_description[file] = dic
+			data.write(json.dumps(dic))
+			data.close()
 
 	''' Add a file to existing ones
 	file: the file to add '''
 	def addFile(self, file):
 		if file not in self._file_list:
 			self._file_list.append(file)
-			self._osm_description[file] = self._getFileDescription(minidom.parse(file))
-			self._parsed_files[file] = self.getFileParsed(file)
+			self._update(file)
 		pass
 
 	def _getNameAndNumberFromNode(self, node):
@@ -62,14 +91,12 @@ class Database:
 		return street, number
 
 	# adds to map the parsed .osm xml document
-	def getFileParsed(self, file):
-
+	def _getFileParsed(self, file):
 
 		###TODO
 		start = time.perf_counter()
 		print("START\tgetFileParsed ", time.perf_counter())
 		###
-
 
 		xml = minidom.parse(file)
 		nodes = xml.getElementsByTagName('node')
@@ -77,7 +104,7 @@ class Database:
 		for n in nodes:
 			street, number = self._getNameAndNumberFromNode(n)
 			if street is not None and number is not None:
-				output_map[street][number] = (float(n.getAttribute('lat')), float(n.getAttribute('lon')))
+				output_map[street][int(number)] = (float(n.getAttribute('lat')), float(n.getAttribute('lon')))
 		
 		###
 		end = time.perf_counter()
@@ -96,7 +123,8 @@ class Database:
 	# the description includes: bounds(minlat, minlon, maxlat, maxlon), state/country/city name(name),
 	# and 
 	# file: minidom xml file
-	def _getFileDescription(self, xml):
+	def _getFileDescription(self, file):
+		xml = minidom.parse(file)
 		output_map = {}
 		
 		# retrieving bounds
@@ -125,10 +153,13 @@ class Database:
 	# TODO improve on how the states/cities are typen
 	''' Return the first osm file holding the address, if exists, otherwise return None'''
 	def getSectionFromAddress(self, address):
+
 		for k, v in self._osm_description.items():
 			for x in address.split(","):
 				if nameComparison(v['name'], x):
 					return k
+
+		#TODO download or get tile from another place
 		return None
 
 	''' Return the first osm file holding the coordinate, if exists, otherwise return None'''
@@ -138,4 +169,6 @@ class Database:
 			if (lat >= v['minlat'] and lat <= v['maxlat'] and
 				lon >= v['minlon'] and lon <= v['maxlon']):
 				return k
+
+		#TODO download or get tile from another place
 		return None

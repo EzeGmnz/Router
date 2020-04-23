@@ -1,0 +1,66 @@
+####### POSTGRES #############
+create user:
+create role username login password password noinherit createdb
+\c databasename
+create schema username authorization username
+grant usage on schema username to public 
+
+##############################
+
+Importing data 
+osm2pgrouting -f "D:\Eze\Programacion\Router\SimpleServer\sandbox\src\map.osm" -c "C:\Program Files\PostgreSQL\12\bin\mapconfig_for_cars.xml" -d osm -U ezegi -h localhost -p 5432 -W contraseña
+
+Removing schema 
+drop schema public cascade;
+create schema public;
+grant all on schema public to postgres;
+grant all on schema public to ezegi;
+grant all on schema public to public;
+
+#FINDING ROUTE BETWEEN TWO COORDS (long, lat)
+with source_tmp as (SELECT source 
+            FROM ways order by st_distance(the_geom, ST_SetSRID(ST_MakePoint(-62.265308, -38.706359), 4326)) limit 1),
+    target_tmp as (SELECT target 
+            FROM ways order by st_distance(the_geom, ST_SetSRID(ST_MakePoint(-62.278076, -38.706544), 4326)) limit 1)
+
+SELECT * 
+FROM pgr_dijkstra('SELECT gid AS id, source, target, cost, reverse_cost FROM ways', (SELECT source from source_tmp) , 
+                  (SELECT target from  target_tmp), true) AS r 
+LEFT JOIN ways AS w ON r.edge = w.gid;
+
+# DIJKSTRA COST MATRIX
+SELECT * FROM pgr_dijkstraCostMatrix(
+    'SELECT id, source, target, cost, reverse_cost FROM edge_table',
+    (SELECT array_agg(id) FROM edge_table_vertices_pgr WHERE id < 5)
+);
+
+# FUNCTION TO GET NEAREST GEOMETRY FROM A GIVEN COORDINATE
+CREATE OR REPLACE FUNCTION nearestGeo(p geometry) RETURNS integer AS $$
+		DECLARE output bigint;
+        BEGIN
+                select source INTO output
+				from ways
+				order by st_distance(the_geom, p) limit 1;
+				
+				return output;
+        END;
+$$ LANGUAGE plpgsql;
+
+# SOLVING THE TSP, MAKES THE MATRIX SYMMETRIC
+SELECT * FROM pgr_TSP(
+    $$
+    SELECT * FROM pgr_dijkstraCostMatrix(
+        'SELECT gid as id, source, target, cost, reverse_cost FROM ways',
+        (select array_agg(nearestGeo(ST_SetSRID(ST_MakePoint(lon, lat), 4326))) from coords),
+        directed := false)
+    $$,
+    randomize := false);
+
+# ROUTE BETWEEN
+CREATE OR REPLACE FUNCTION routeBetween(source bigint, target bigint) RETURNS TABLE(g geometry) AS
+$$ 		
+	SELECT the_geom
+	FROM pgr_dijkstra('SELECT gid AS id, source, target, cost, reverse_cost FROM ways', source, target, true) AS r 
+	LEFT JOIN ways AS w ON r.edge = w.gid; 
+$$
+LANGUAGE SQL;
