@@ -24,30 +24,46 @@ $$
 $$ 
 LANGUAGE 'plpgsql';
 
+CREATE OR REPLACE FUNCTION getMatrixSQL(FLOAT[], FLOAT[]) RETURNS text AS
+$$
+	WITH coords (lat, lon) AS (
+		select *
+		from unnest($1, $2)
+	)
+	select ('SELECT * 
+			FROM pgr_dijkstraCostMatrix(
+										''SELECT gid AS id, source, target, cost, reverse_cost FROM ways'',
+										(SELECT array_agg(nearestGeo(lat, lon)) FROM (select * from unnest(' 
+													|| (select 	concat('ARRAY[', string_agg(lat::text, ','), ']', ',', 
+																concat('ARRAY[', string_agg(lon::text, ','), ']'))
+														from coords) ||')) as x(lat, lon)),
+										directed := false)');
+$$
+LANGUAGE SQL;
+
 /*
 	Requires arrays to be of the same length. Will be matched index to index
 	input: $1 latitudes, $2 lonitudes. 
 */
 
-CREATE OR REPLACE FUNCTION routeBetweenShell(FLOAT[], FLOAT[]) RETURNS TABLE(lat numeric, lon numeric, length float) AS
+CREATE OR REPLACE FUNCTION routeBetweenShell(FLOAT[], FLOAT[]) RETURNS TABLE(lat numeric, lon numeric, length float, o_lat float, o_lon float) AS
 $$
+	
 	WITH 
-	coords AS (
-		SELECT *
-		FROM unnest($1, $2)
-	), 
+	coords (lat, lon) AS (
+		select *
+		from unnest($1, $2)
+	),
+	coordsMap AS(
+		select coords.lat as o_lat, coords.lon as o_lon, p.lat, p.lon
+		from coords
+		join public.ways_vertices_pgr as p on p.id = (select nearestGeo(coords.lat, coords.lon)) 
+	),
 	routeseq AS (
-		SELECT * FROM pgr_TSP(
-			'
-				SELECT * 
-				FROM pgr_dijkstraCostMatrix(''SELECT gid AS id, source, target, cost, reverse_cost FROM ways'',
-											(SELECT array_agg(nearestGeo(lat, lon)) FROM coords),
-											directed := false)
-			'
-		,
-		start_id := (select nearestGeo($1[0], $2[0])),
-		/*end_id :=  (select nearestGeo($1[5], $2[5])),*/
-		randomize := false)
+		SELECT * FROM pgr_TSP(	getMatrixSQL($1, $2),
+								start_id := (select nearestGeo($1[0], $2[0])),
+								/*end_id :=  (select nearestGeo($1[5], $2[5])),*/
+								randomize := false)
 	),
 	tuples AS (
 		SELECT r1.node AS source, r2.node AS target
@@ -58,8 +74,13 @@ $$
 	route as(
 		SELECT (routeBetween(source, target)).* from tuples
 	)
-	select lat, lon, length
+	
+	select p.lat, p.lon, length, c.o_lat, c.o_lon
 	from route
-	join public.ways_vertices_pgr on id = node
+	join public.ways_vertices_pgr as p on p.id = node
+	left join coordsMap as c on p.lat = c.lat and p.lon = c.lon;
 $$
 LANGUAGE SQL;
+
+select * from routeBetweenShell(ARRAY[-38.7062835877551, -38.7126883, -38.7035629, -38.7082947, -38.7126117, -38.7126117, -38.7126117, -38.71545756938776, -38.71077422653061, -38.72334768571429, -38.71331744285715], 
+					ARRAY[-62.265117114285715, -62.2636853, -62.2771608, -62.2686823, -62.2615503, -62.2615503, -62.2615503, -62.27026347346939, -62.2722308755102, -62.2686434, -62.26512135510204])
