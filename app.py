@@ -4,7 +4,7 @@ Flask app implementation
 """
 from flask import Flask, jsonify, request
 from func.RouterSQL import RouterSQL
-from func.GeocoderNominatim import GeocoderNominatim
+from func.GeocoderMultiple import GeocoderMultiple
 from flask_sqlalchemy import SQLAlchemy
 
 __author__ = "Ezequiel Giménez"
@@ -33,12 +33,11 @@ def routing():
 	content = request.json
 	addresses = content['addresses']
 
-	geocoder = GeocoderNominatim()
+	geocoder = GeocoderMultiple()
 
 	coordinates = []
 	for a in addresses:
 		c = geocoder.geocode(a)
-		print(a, c)
 		# TODO improve this check
 		if c is not None:
 			coordinates.append(c)
@@ -47,8 +46,17 @@ def routing():
 
 	router = RouterSQL(db)
 	routeR, coords, lengthR = router.getRoute(coordinates)
+
+	addr = []
+	for c in coords:
+		addr.append(addresses[coordinates.index(c)])
+
 	
-	return jsonify(result = 'success', route = routeR, orderedCoords = coords, length = lengthR)
+	return jsonify(	result = 'success',
+					route = routeR,
+					orderedCoords = coords, 
+					orderedAddresses = addr, 
+					length = lengthR)
 
 @app.route('/')
 def index():

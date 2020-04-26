@@ -36,7 +36,7 @@ class RouterSQL(IRouter):
 		output = self.db.engine.execute(query)
 
 		route = []
-		orderedRoute = []
+		orderedRoute = set()
 		length = 0
 
 		for r in output:
@@ -44,13 +44,12 @@ class RouterSQL(IRouter):
 			o_lat = r['o_lat']
 			o_lon = r['o_lon']
 
-			print(o_lat, o_lon)
+			if o_lat is not None and o_lon is not None:
+				orderedRoute.add((float(o_lat), float(o_lon)))
 
 			l = r['length']
 			if coord is not None and l is not None:
-				if o_lat is not None and o_lon is not None:
-					orderedRoute.append((float(o_lat), float(o_lon)))
 				route.append(coord)
 				length += float(r['length'])
 		
-		return route, orderedRoute, length
+		return route, list(orderedRoute), length

@@ -6,8 +6,16 @@ URL = 'http://127.0.0.1:5000'
 addresses = [
 	'Paraguay 555, Bahia Blanca, Argentina',
 	'Zapiola 1000, Bahia Blanca, Argentina',
-	'Alem 1000, Bahia Blanca, Argentina']
-
+	'Alem 1000, Bahia Blanca, Argentina',
+	'Horneros 20, Bahia Blanca, Argentina',
+	'San Andres 300, Bahia Blanca, Argentina',
+	'Charlone 500, Bahia Blanca, Argentina',
+	'Parchappe 678, Bahia Blanca, Argentina',
+	'Pringles 1000, Bahia Blanca, Argentina',
+	'Chequen 20, Bahia Blanca, Argentina',
+	'Pellegrini 120, Bahia Blanca, Argentina',
+	'Brown 600, Bahia Blanca, Argentina',
+	'España 200, Bahia Blanca, Argentina',]
 
 '''JSON2 = {'points' : [
 		[-38.706225, -62.265388],
@@ -34,7 +42,8 @@ if r.ok:
 		# Success
 		print('length: ' + str(result['length']))
 		print('route: ' + str(result['route']))
-		print('ordered: ' + str(result['orderedCoords']))
+		print('ordered coordinates: ' + str(result['orderedCoords']))
+		print('ordered addresses: ' + str(result['orderedAddresses']))
 	else:
-		print('FAILED. Reason: ' + result['message'])
 		# Failed
+		print('FAILED. Reason: ' + result['message'])
