@@ -27,6 +27,7 @@ class GeocoderMultiple(IGeocoder):
 		coord = None
 		while i < len(self.geocoders) and coord is None:
 			coord = self.geocoders[i].geocode(address, timeout = self.GEOCODER_TIMEOUT)
+			i += 1
 			
 		if coord is not None:
 			print(address, (coord.latitude, coord.longitude))

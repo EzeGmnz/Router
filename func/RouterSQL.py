@@ -22,6 +22,9 @@ class RouterSQL(IRouter):
 
 	def getRoute(self, coordinates):
 		
+		print(str(coordinates))
+
+		# Building SQL Query
 		query = 'select length, lat, lon, o_lat, o_lon from routeBetweenShell('
 		latitudes = []
 		longitudes = []
@@ -33,8 +36,10 @@ class RouterSQL(IRouter):
 		query += 'ARRAY' + str(latitudes) + ','
 		query += 'ARRAY' + str(longitudes) + ')'
 
+		# execute query in PostreSQL database
 		output = self.db.engine.execute(query)
 
+		# Formatting output
 		route = []
 		orderedRoute = set()
 		length = 0

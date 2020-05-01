@@ -43,7 +43,7 @@ LANGUAGE SQL;
 
 /*
 	Requires arrays to be of the same length. Will be matched index to index
-	input: $1 latitudes, $2 lonitudes. 
+	input: $1 latitudes, $2 longitudes. 
 */
 
 CREATE OR REPLACE FUNCTION routeBetweenShell(FLOAT[], FLOAT[]) RETURNS TABLE(lat numeric, lon numeric, length float, o_lat float, o_lon float) AS
@@ -61,8 +61,9 @@ $$
 	),
 	routeseq AS (
 		SELECT * FROM pgr_TSP(	getMatrixSQL($1, $2),
-								start_id := (select nearestGeo($1[0], $2[0])),
-								/*end_id :=  (select nearestGeo($1[5], $2[5])),*/
+							  	/* ARRAY INDEXES START AT 1 WTF*/
+								start_id := (select nearestGeo($1[1], $2[1])),
+								/*end_id := (select nearestGeo($1[5], $2[5])),*/
 								randomize := false)
 	),
 	tuples AS (
