@@ -51,7 +51,6 @@ def routing():
 	for c in coords:
 		addr.append(addresses[coordinates.index(c)])
 
-	
 	return jsonify(	result = 'success',
 					route = routeR,
 					orderedCoords = coords, 

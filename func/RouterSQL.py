@@ -21,8 +21,6 @@ class RouterSQL(IRouter):
 		self.db = database
 
 	def getRoute(self, coordinates):
-		
-		print(str(coordinates))
 
 		# Building SQL Query
 		query = 'select length, lat, lon, o_lat, o_lon from routeBetweenShell('
@@ -41,16 +39,17 @@ class RouterSQL(IRouter):
 
 		# Formatting output
 		route = []
-		orderedRoute = set()
+		orderedRoute = []
 		length = 0
 
 		for r in output:
 			coord = (float(r['lat']), float(r['lon']))
-			o_lat = r['o_lat']
-			o_lon = r['o_lon']
+			o_coord = (r['o_lat'], r['o_lon'])
 
-			if o_lat is not None and o_lon is not None:
-				orderedRoute.add((float(o_lat), float(o_lon)))
+			# found original coordinates
+			if o_coord[0] is not None:
+				if o_coord not in orderedRoute:
+					orderedRoute.append(o_coord)
 
 			l = r['length']
 			if coord is not None and l is not None:

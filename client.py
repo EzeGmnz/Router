@@ -15,23 +15,7 @@ addresses = [
 	'Chequen 20, Bahia Blanca, Argentina',
 	'Pellegrini 120, Bahia Blanca, Argentina',
 	'Brown 600, Bahia Blanca, Argentina',
-	'España 200, Bahia Blanca, Argentina',]
-
-'''JSON2 = {'points' : [
-		[-38.706225, -62.265388],
-		[-38.704577, -62.272677],
-		[-38.704718, -62.27653],
-		[-38.706823, -62.271098],
-		[-38.712674, -62.270221],
-		[-38.719969, -62.268381],
-		[-38.719758, -62.25299],
-		[-38.710612, -62.255185],
-		[-38.716506, -62.272909],
-		[-38.695943, -62.215489],
-		[-38.780062, -62.267788],
-		[-38.710363, -62.325136],
-		[-38.750126, -62.178358]]
-}'''
+	'España 200, Bahia Blanca, Argentina']
 
 JSON = {'addresses': addresses}
 r = requests.post(URL + '/routing', json = JSON)
