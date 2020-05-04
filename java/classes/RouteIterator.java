@@ -11,29 +11,26 @@ import java.util.NoSuchElementException;
  * Iterates each SECTION of the route, that is
  * returns the route between the next set of points
  */
-public class RouteIterator implements Iterator {
+public class RouteIterator implements Iterator<RoutePoint> {
 
     private Route route;
     private RoutePoint current;
 
     public RouteIterator(Route r) {
         this.route = r;
+        this.current = route.getRoutePoints().get(0);
     }
 
     @Override
     public boolean hasNext() {
-        try {
-            return this.route.getNext(current) != null;
-        } catch (NotFoundException e) {
-            return false;
-        }
+        return current != null;
     }
 
     @Override
-    public Object next() throws NoSuchElementException {
+    public RoutePoint next() throws NoSuchElementException {
         try {
-            RoutePoint output = this.route.getNext(current);
-            current = output;
+            RoutePoint output = current;
+            current = this.route.getNext(current);
             return output;
         } catch (NotFoundException e) {
             throw new NoSuchElementException("Iterator out of bounds");

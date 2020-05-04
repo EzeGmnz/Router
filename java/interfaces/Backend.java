@@ -2,6 +2,9 @@ package com.ezequiel.router.interfaces;
 
 import org.json.JSONObject;
 
+/**
+ * Backend abstraction including basic operations
+ */
 public interface Backend {
 
     /**

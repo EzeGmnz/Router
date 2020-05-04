@@ -1,5 +1,6 @@
 package com.ezequiel.router.interfaces;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.io.Serializable;
@@ -24,4 +25,9 @@ public class RoutePoint implements Serializable {
         this.address = address;
     }
 
+    @NonNull
+    @Override
+    public String toString() {
+        return address == null ? "" : this.address;
+    }
 }

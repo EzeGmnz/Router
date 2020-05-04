@@ -55,6 +55,11 @@ public class MatrixRoute implements Route {
         }
     }
 
+    @Override
+    public List<RoutePoint> getRoutePoints() {
+        return null;
+    }
+
     /*@Override
     public void removeRoutePoint(RoutePoint p) throws NotFoundException {
         if (!pointList.contains(p)) {
@@ -99,6 +104,11 @@ public class MatrixRoute implements Route {
 
         route.get(indexStart).get(indexEnd).clear();
         route.get(indexStart).get(indexEnd).addAll(r);
+    }
+
+    @Override
+    public List<RoutePoint> getRouteBetween(RoutePoint start, RoutePoint end) throws NotFoundException {
+        return null;
     }
 
     @Override

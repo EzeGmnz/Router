@@ -61,7 +61,7 @@ public class TSPJson implements TSPSolver {
     }
 
     /**
-     * Building a MatrixRoute using CoordRoutePoints with the given json
+     * Building a ListRoute using CoordRoutePoints with the given json
      * json contains: orderedCoords, orderedAddresses and the route with coordinates
      *
      * @param json response from database
@@ -79,7 +79,6 @@ public class TSPJson implements TSPSolver {
             length = Double.parseDouble(json.get("length").toString());
 
             // Ordered coords and addresses retrieving
-            // Both MUST have same length size
             JSONArray aux;
             double[] latlon;
             String address;
@@ -102,21 +101,23 @@ public class TSPJson implements TSPSolver {
                 r.addRoutePoint(routePoint);
             }
 
-            // Route retrieving and insertion into the route currently being built
+            // Route retrieving and insertion into the Route currently being built
             RoutePoint start = orderedRoutePoints.get(0);
             RoutePoint end = orderedRoutePoints.get(1);
             List<RoutePoint> partialRoute = new ArrayList<>();
 
             for (int i = 0; i < arrayRoute.length() && end != null; i++) {
+
+                // aux contains [lat, lon]
                 aux = (JSONArray) arrayRoute.get(i);
                 latlon = new double[]{
                         Double.parseDouble(aux.get(0).toString()),
                         Double.parseDouble(aux.get(1).toString())};
                 RoutePoint p = new CoordRoutePoint(null, latlon[0], latlon[1]);
 
-                // If we reached the partial end
-                // an old partial route is dead and a new one is born
                 if (p.equals(end)) {
+                    // Reached the partial end
+                    // an old partial route is dead and a new one is born ;)
                     partialRoute.add(0, start);
                     partialRoute.add(end);
 

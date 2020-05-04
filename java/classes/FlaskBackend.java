@@ -2,6 +2,7 @@ package com.ezequiel.router.classes;
 
 import android.content.Context;
 
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -22,7 +23,7 @@ public class FlaskBackend implements Backend {
         context = c;
     }
 
-    private static final String url = "http://192.168.1.33:5000/routing";
+    private static final String url = "http://192.168.0.5:5000/routing";
 
     public static Backend getInstance(Context context) {
         if (instance == null) {
@@ -49,7 +50,10 @@ public class FlaskBackend implements Backend {
                     }
                 });
 
-        // Access the RequestQueue through your singleton class.
+        jsonObjectRequest.setRetryPolicy(new DefaultRetryPolicy(
+                0,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
         this.addToRequestQueue(jsonObjectRequest);
     }
 

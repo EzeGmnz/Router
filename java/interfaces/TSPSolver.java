@@ -17,6 +17,9 @@ public interface TSPSolver {
      */
     Route solveTSP(List<String> addresses, RouteBuilderListener listener);
 
+    /**
+     * Interface to be used when building a Route
+     */
     public interface RouteBuilderListener {
 
         public void onRouteBuilt(Route r);

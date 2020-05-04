@@ -6,7 +6,9 @@ import android.util.Log;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.ezequiel.router.classes.TSPJson;
+import com.ezequiel.router.exceptions.NotFoundException;
 import com.ezequiel.router.interfaces.Route;
+import com.ezequiel.router.interfaces.RoutePoint;
 import com.ezequiel.router.interfaces.TSPSolver;
 
 import java.util.ArrayList;
@@ -30,7 +32,21 @@ public class MainActivity extends AppCompatActivity {
         solver.solveTSP(addresses, new TSPSolver.RouteBuilderListener() {
             @Override
             public void onRouteBuilt(Route r) {
-                Log.e("ASDASDASD", r.toString());
+                for (RoutePoint p : r) {
+                    try {
+                        if (p != null) {
+                            List<RoutePoint> aux = r.getRouteBetween(p, null);
+                            if (aux != null)
+                                for (RoutePoint x : r.getRouteBetween(p, null)) {
+                                    Log.e("ASDASD", x.toString());
+
+                                }
+                            Log.e("BREAK", "");
+                        }
+                    } catch (NotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         });
 

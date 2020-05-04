@@ -1,6 +1,7 @@
 package com.ezequiel.router.classes;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.ezequiel.router.exceptions.NotFoundException;
 import com.ezequiel.router.interfaces.Route;
@@ -12,7 +13,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Route implementation using matrix
+ * Route implementation using a list
  * Uses CoordRoutePoint to represent points
  */
 public class ListRoute implements Route {
@@ -29,8 +30,7 @@ public class ListRoute implements Route {
     private List<List<RoutePoint>> routes;
 
     /**
-     * Maps RoutePoint to matrix entries using list positions
-     * Needs to be reordered when TSP problem is solved
+     * Maps RoutePoint to lists positions
      */
     private List<RoutePoint> pointList;
 
@@ -43,6 +43,12 @@ public class ListRoute implements Route {
     @Override
     public void addRoutePoint(RoutePoint p) {
         pointList.add(p);
+        routes.add(null);
+    }
+
+    @Override
+    public List<RoutePoint> getRoutePoints() {
+        return this.pointList;
     }
 
     // Should this be on the implementation of the iterator?
@@ -67,17 +73,44 @@ public class ListRoute implements Route {
         if (!pointList.contains(end)) {
             throw new NotFoundException("Route doesn't have: " + end);
         }
+        if (!r.get(0).equals(start) || !r.get(r.size() - 1).equals(end)) {
+            throw new NotFoundException("Route doesnt start or end with the given coordinates");
+        }
 
-        routes.add(r);
+        routes.add(pointList.indexOf(start), r);
     }
 
     @Override
-    public Iterator iterator() {
-        return new RouteIterator(this);
+    public List<RoutePoint> getRouteBetween(RoutePoint start, @Nullable RoutePoint end) throws NotFoundException {
+        if (!pointList.contains(start)) {
+            throw new NotFoundException("Route doesn't have: " + start);
+        }
+        if (end != null && !pointList.contains(end)) {
+            throw new NotFoundException("Route doesn't have: " + end);
+        }
+
+        if (end == null || end.equals(this.getNext(start))) {
+            return this.routes.get(pointList.indexOf(start));
+        }
+
+        int indexStart, indexEnd;
+        indexStart = pointList.indexOf(start);
+        indexEnd = pointList.indexOf(end);
+        if (indexEnd <= indexStart) {
+            return null;
+        }
+
+        List<RoutePoint> output = new ArrayList<>();
+        for (int i = indexStart; i < indexEnd; i++) {
+            output.addAll(routes.get(i));
+        }
+
+        return output;
     }
 
-    public List<RoutePoint> getPointList() {
-        return pointList;
+    @Override
+    public Iterator<RoutePoint> iterator() {
+        return new RouteIterator(this);
     }
 
     @NonNull

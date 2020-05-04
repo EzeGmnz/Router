@@ -1,5 +1,6 @@
 package com.ezequiel.router.classes;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.ezequiel.router.interfaces.RoutePoint;
@@ -31,10 +32,16 @@ public class CoordRoutePoint extends RoutePoint {
 
     public boolean equals(Object obj) {
         try {
-            return ((CoordRoutePoint)obj).getLat() == this.lat && ((CoordRoutePoint)obj).getLon() == this.lon;
+            return ((CoordRoutePoint) obj).getLat() == this.lat && ((CoordRoutePoint) obj).getLon() == this.lon;
         } catch (ClassCastException e) {
             e.printStackTrace();
         }
         return false;
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return super.toString() + " lat:" + lat + " lon:" + lon;
     }
 }
