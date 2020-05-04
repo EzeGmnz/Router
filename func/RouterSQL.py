@@ -41,6 +41,7 @@ class RouterSQL(IRouter):
 
 		# Building SQL Query
 		query = 'select length, lat, lon, o_lat, o_lon from routeBetweenShell('
+		
 		latitudes = []
 		longitudes = []
 
@@ -63,7 +64,7 @@ class RouterSQL(IRouter):
 			coord = (float(r['lat']), float(r['lon']))
 			o_coord = (r['o_lat'], r['o_lon'])
 			l = r['length']
-			if l is not None:
+			if l is not None: 
 				length += float(l)
 
 			# found original coordinates

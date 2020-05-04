@@ -30,6 +30,7 @@ db.init_app(app)
 
 @app.route('/routing', methods=['GET', 'POST'])
 def routing():
+	print("ASD")
 	content = request.json
 	addresses = content['addresses']
 
@@ -45,6 +46,7 @@ def routing():
 			return jsonify(result = 'failed', message = 'Could not geocode ' + a)
 
 	router = RouterSQL(db)
+
 	routeR, coords, lengthR = router.getRoute(coordinates)
 
 	addr = []
@@ -63,5 +65,5 @@ def index():
 
 # Run locally
 if __name__ == '__main__':
-	app.run(host= '0.0.0.0', debug=True)
+	app.run(host= '0.0.0.0', debug=True, use_reloader=False)
 	
